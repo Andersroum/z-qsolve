@@ -9,17 +9,22 @@ fn UnfStderrWriter(io: std.Io, text: []const u8) !void {
 
 fn printHelp(init: std.process.Init) !void {
     const io = init.io;
+    var buffer: [4096]u8 = undefined;
+    var file_writer = std.Io.File.writer(stderr, io, &buffer);
+    const output = &file_writer.interface;
 
-    try UnfStderrWriter(io, "Zig Qsolver\n");
-    try UnfStderrWriter(io, "Solve equations in the form ax^2 + bx + c = 0\n\n");
-    try UnfStderrWriter(io, "USAGE:\n");
-    try UnfStderrWriter(io, "    zig run main.zig -- <a> <b> <c>\n");
-    try UnfStderrWriter(io, "    *a,b and c must be numbers\n\n");
-    try UnfStderrWriter(io, "FLAGS:\n");
-    try UnfStderrWriter(io, "    `help`  prints this message\n\n");
-    try UnfStderrWriter(io, "EXAMPLES:\n");
-    try UnfStderrWriter(io, "     zig run main.zig -- 1 -5 6\n");
-    try UnfStderrWriter(io, "     zig run main.zig -- 43.2 3/4 78\n\n");
+    try output.print("Zig Qsolver\n", .{});
+    try output.print("Solve equations in the form ax^2 + bx + c = 0\n\n", .{});
+    try output.print("USAGE:\n", .{});
+    try output.print("    zig run main.zig -- <a> <b> <c>i\n", .{});
+    try output.print("    *a,b and c must be numbers\n\n", .{});
+    try output.print("FLAGSi:\n", .{});
+    try output.print("    `help`   prints this message\n\n", .{});
+    try output.print("EXAMPLES:\n", .{});
+    try output.print("    zig run main.zig -- 1 -5 6\n", .{});
+    try output.print("    zig run main.zig -- 43.2 3/4 78\n\n", .{});
+
+    try output.flush();
 }
 
 pub fn main(init: std.process.Init) !void {

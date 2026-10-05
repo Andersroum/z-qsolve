@@ -16,6 +16,45 @@ pub fn FindLcm(x: i64, y: i64) i64 {
     return @divExact(@abs(x), FindGcd(x, y) * @abs(y));
 }
 
+pub fn FindSquare(num: i64) struct { i64, i64 } {
+    var inside: i64 = @intCast(@abs(num));
+    var outside: i64 = 1;
+
+    while (@rem(inside, 4) == 0) {
+        inside = @divExact(inside, 4);
+        outside *= 2;
+    }
+
+    var iterations: u8 = 0;
+    var i: i64 = 3;
+    while (i < @divTrunc(inside, i)) {
+        const i_sqr: i64 = i * i;
+        while (@rem(inside, i_sqr) == 0) {
+            inside = @divExact(inside, i_sqr);
+            outside *= i;
+        }
+        iterations += 1;
+
+        if (iterations > 2500) {
+            break;
+        }
+
+        i += 2;
+    }
+
+    return .{ outside, inside };
+}
+
+pub const SquareRoot = struct {
+    outside: Fraction,
+    inside: Fraction,
+
+    pub fn FindSquareRoot(fract: Fraction) SquareRoot {
+        //do here
+        return SquareRoot{};
+    }
+};
+
 pub fn SimplifyFraction(num: i64, den: i64) Fraction {
     const gcd: i64 = FindGcd(num, den);
     var a: i64 = @divExact(num, gcd);
