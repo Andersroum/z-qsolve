@@ -1,5 +1,5 @@
 /// Returns the greatest common divisor of two numbers using the Euclidean algorithm
-pub fn FindGcd(x: i64, y: i64) i64 {
+pub fn findGcd(x: i64, y: i64) i64 {
     var a: i64 = x;
     var b: i64 = y;
 
@@ -12,11 +12,11 @@ pub fn FindGcd(x: i64, y: i64) i64 {
 }
 
 /// Returns the least common multiple of two numbers
-pub fn FindLcm(x: i64, y: i64) i64 {
-    return @divExact(@abs(x), FindGcd(x, y) * @abs(y));
+pub fn findLcm(x: i64, y: i64) i64 {
+    return @divExact(@abs(x), findGcd(x, y) * @abs(y));
 }
 
-pub fn FindSquare(num: i64) struct { i64, i64 } {
+pub fn findSquare(num: i64) struct { i64, i64 } {
     var inside: i64 = @intCast(@abs(num));
     var outside: i64 = 1;
 
@@ -25,7 +25,7 @@ pub fn FindSquare(num: i64) struct { i64, i64 } {
         outside *= 2;
     }
 
-    var iterations: u8 = 0;
+    var iterations: u16 = 0;
     var i: i64 = 3;
     while (i < @divTrunc(inside, i)) {
         const i_sqr: i64 = i * i;
@@ -49,14 +49,33 @@ pub const SquareRoot = struct {
     outside: Fraction,
     inside: Fraction,
 
-    pub fn FindSquareRoot(fract: Fraction) SquareRoot {
-        //do here
-        return SquareRoot{};
+    pub fn findSquareRoot(x: Fraction) SquareRoot {
+        const fract: Fraction = simplifyFraction(x.numerator, x.denominator);
+
+        const numerator_square_root: i64 = findSquare(fract.numerator);
+        const outside_num: i64 = numerator_square_root[0];
+        const inside_num: i64 = numerator_square_root[1];
+
+        const denominator_square_root: i64 = findSquare(fract.denominator);
+        const outside_den: i64 = denominator_square_root[0];
+        const inside_den: i64 = denominator_square_root[1];
+
+        return SquareRoot{
+            .outside = Fraction{
+                .numerator = outside_num,
+                .denominator = outside_den,
+            },
+            //
+            .inside = Fraction{
+                .numerator = inside_num,
+                .denominator = inside_den,
+            },
+        };
     }
 };
 
-pub fn SimplifyFraction(num: i64, den: i64) Fraction {
-    const gcd: i64 = FindGcd(num, den);
+pub fn simplifyFraction(num: i64, den: i64) Fraction {
+    const gcd: i64 = findGcd(num, den);
     var a: i64 = @divExact(num, gcd);
     var b: i64 = @divExact(den, gcd);
 
@@ -81,6 +100,6 @@ pub const Fraction = struct {
     denominator: i64,
 
     pub fn New(num: i64, den: i64) Fraction {
-        return SimplifyFraction(num, den);
+        return simplifyFraction(num, den);
     }
 };

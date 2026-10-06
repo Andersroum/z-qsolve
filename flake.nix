@@ -12,7 +12,7 @@
     devShells.${system}.default = pkgs.mkShell {
       buildInputs = [
         pkgs.zig
-        pkgs.zls          # Zig Language Server (like rust-analyzer)
+        pkgs.zls         
       ];
       shellHook = ''
         echo "================================================================================"
