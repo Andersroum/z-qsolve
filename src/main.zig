@@ -1,6 +1,6 @@
 const std = @import("std");
 const lib = @import("lib.zig");
-const fraction = lib.Fraction;
+const Fraction = lib.Fraction;
 const stderr = std.Io.File.stderr();
 
 fn UnfStderrWriter(io: std.Io, text: []const u8) !void {

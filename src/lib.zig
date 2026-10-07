@@ -102,4 +102,19 @@ pub const Fraction = struct {
     pub fn New(num: i64, den: i64) Fraction {
         return simplifyFraction(num, den);
     }
+
+    pub fn mul(self: Fraction, other: Fraction) Fraction {
+        const gcd_num_self_den_other: i64 = findGcd(self.numerator, other.denominator);
+        const gcd_den_self_num_other: i64 = findGcd(self.denominator, other.numerator);
+
+        var num: i64 = @divExact(self.numerator, gcd_num_self_den_other) * @divExact(other.numerator, gcd_den_self_num_other);
+        var den: i64 = @divExact(self.denominator, gcd_den_self_num_other) * @divExact(other.denominator, gcd_num_self_den_other);
+
+        if (den < 0) {
+            num = -num;
+            den = -den;
+        }
+
+        return .{ .numerator = num, .denominator = den };
+    }
 };
