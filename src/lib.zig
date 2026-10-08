@@ -1,4 +1,3 @@
-/// Returns the greatest common divisor of two numbers using the Euclidean algorithm
 pub fn findGcd(x: i64, y: i64) i64 {
     var a: i64 = x;
     var b: i64 = y;
@@ -11,9 +10,11 @@ pub fn findGcd(x: i64, y: i64) i64 {
     return @intCast(@abs(a));
 }
 
-/// Returns the least common multiple of two numbers
 pub fn findLcm(x: i64, y: i64) i64 {
-    return @divExact(@abs(x), findGcd(x, y) * @abs(y));
+    const abs_x: i64 = @as(i64, @intCast(@abs(x)));
+    const abs_y: i64 = @as(i64, @intCast(@abs(y)));
+
+    return @divExact(abs_x, findGcd(x, y)) * abs_y;
 }
 
 pub fn findSquare(num: i64) struct { i64, i64 } {
@@ -116,5 +117,31 @@ pub const Fraction = struct {
         }
 
         return .{ .numerator = num, .denominator = den };
+    }
+
+    pub fn add(self: Fraction, other: Fraction) Fraction {
+        if (self.denominator == other.denominator) {
+            return Fraction.New(self.numerator + other.numerator, self.denominator);
+        }
+        const lcm: i64 = findLcm(self.denominator, other.denominator);
+
+        const num: i64 =
+            (@divExact(lcm, self.denominator) * self.numerator) + (@divExact(lcm, other.denominator) * other.numerator);
+        const den: i64 = lcm;
+
+        return Fraction.New(num, den);
+    }
+
+    pub fn subtract(self: Fraction, other: Fraction) Fraction {
+        if (self.denominator == other.denominator) {
+            return Fraction.New(self.numerator - other.numerator, self.denominator);
+        }
+        const lcm: i64 = findLcm(self.denominator, other.denominator);
+
+        const num: i64 =
+            (@divExact(lcm, self.denominator) * self.numerator) - (@divExact(lcm, other.denominator) * other.numerator);
+        const den: i64 = lcm;
+
+        return Fraction.New(num, den);
     }
 };
