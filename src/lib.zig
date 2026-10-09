@@ -1,3 +1,5 @@
+const std = @import("std");
+
 pub fn findGcd(x: i64, y: i64) i64 {
     var a: i64 = x;
     var b: i64 = y;
@@ -50,8 +52,10 @@ pub const SquareRoot = struct {
     outside: Fraction,
     inside: Fraction,
 
-    pub fn findSquareRoot(x: Fraction) SquareRoot {
-        const fract: Fraction = simplifyFraction(x.numerator, x.denominator);
+    const Self = @This();
+
+    pub fn findSquareRoot(x: Fraction) Self {
+        const fract: Fraction = createSimplifiedFract(x.numerator, x.denominator);
 
         const numerator_square_root: i64 = findSquare(fract.numerator);
         const outside_num: i64 = numerator_square_root[0];
@@ -61,7 +65,7 @@ pub const SquareRoot = struct {
         const outside_den: i64 = denominator_square_root[0];
         const inside_den: i64 = denominator_square_root[1];
 
-        return SquareRoot{
+        return .{
             .outside = Fraction{
                 .numerator = outside_num,
                 .denominator = outside_den,
@@ -73,9 +77,28 @@ pub const SquareRoot = struct {
             },
         };
     }
+
+    pub fn format(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        if (self.inside.numerator == self.inside.denominator) {
+            if (self.outside.denominator == 1) {
+                try writer.print("{d}", .{self.outside.numerator});
+            } else {
+                try writer.print("({f})", .{self.outside});
+            }
+        } else {
+            if (self.outside.denominator == 1) {
+                try writer.print("{d}√{f}", .{ self.outside.numerator, self.inside });
+            } else {
+                try writer.print("({f})√{f}", .{ self.outside, self.inside });
+            }
+        }
+    }
 };
 
-pub fn simplifyFraction(num: i64, den: i64) Fraction {
+pub fn createSimplifiedFract(num: i64, den: i64) Fraction {
     const gcd: i64 = findGcd(num, den);
     var a: i64 = @divExact(num, gcd);
     var b: i64 = @divExact(den, gcd);
@@ -96,15 +119,30 @@ pub fn simplifyFraction(num: i64, den: i64) Fraction {
     };
 }
 
+pub const Fraction_error = error{ denZero, divisionByZero, multiplicationByZero };
+
 pub const Fraction = struct {
     numerator: i64,
     denominator: i64,
 
-    pub fn New(num: i64, den: i64) Fraction {
-        return simplifyFraction(num, den);
+    const Self = @This();
+
+    pub fn New(num: i64, den: i64) Fraction_error!Self {
+        if (den == 0) {
+            return Fraction_error.denZero;
+        }
+        return createSimplifiedFract(num, den);
     }
 
-    pub fn mul(self: Fraction, other: Fraction) Fraction {
+    pub fn mul(self: Self, other: Self) Fraction_error!Self {
+        if (self.numerator == 0 or
+            self.denominator == 0 or
+            other.numerator == 0 or
+            other.denominator == 0)
+        {
+            return Fraction_error.multiplicationByZero;
+        }
+
         const gcd_num_self_den_other: i64 = findGcd(self.numerator, other.denominator);
         const gcd_den_self_num_other: i64 = findGcd(self.denominator, other.numerator);
 
@@ -119,9 +157,9 @@ pub const Fraction = struct {
         return .{ .numerator = num, .denominator = den };
     }
 
-    pub fn add(self: Fraction, other: Fraction) Fraction {
+    pub fn add(self: Fraction, other: Fraction) Fraction_error!Fraction {
         if (self.denominator == other.denominator) {
-            return Fraction.New(self.numerator + other.numerator, self.denominator);
+            return try Fraction.New(self.numerator + other.numerator, self.denominator);
         }
         const lcm: i64 = findLcm(self.denominator, other.denominator);
 
@@ -129,12 +167,12 @@ pub const Fraction = struct {
             (@divExact(lcm, self.denominator) * self.numerator) + (@divExact(lcm, other.denominator) * other.numerator);
         const den: i64 = lcm;
 
-        return Fraction.New(num, den);
+        return try Fraction.New(num, den);
     }
 
-    pub fn subtract(self: Fraction, other: Fraction) Fraction {
+    pub fn sub(self: Fraction, other: Fraction) Fraction {
         if (self.denominator == other.denominator) {
-            return Fraction.New(self.numerator - other.numerator, self.denominator);
+            return try Fraction.New(self.numerator - other.numerator, self.denominator);
         }
         const lcm: i64 = findLcm(self.denominator, other.denominator);
 
@@ -142,6 +180,24 @@ pub const Fraction = struct {
             (@divExact(lcm, self.denominator) * self.numerator) - (@divExact(lcm, other.denominator) * other.numerator);
         const den: i64 = lcm;
 
-        return Fraction.New(num, den);
+        return try Fraction.New(num, den);
+    }
+
+    pub fn div(self: Fraction, other: Fraction) Fraction_error!Fraction {
+        return try self.mul(Fraction{
+            .numerator = other.denominator,
+            .denominator = other.numerator,
+        });
+    }
+
+    pub fn format(
+        self: Fraction,
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        if (self.denominator == 1) {
+            try writer.print("{d}", .{self.numerator});
+        } else {
+            try writer.print("{d}/{d}", .{ self.numerator, self.denominator });
+        }
     }
 };
