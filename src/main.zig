@@ -16,7 +16,7 @@ fn printHelp(init: std.process.Init) !void {
     try output.print("Zig Qsolver\n", .{});
     try output.print("Solve equations in the form ax^2 + bx + c = 0\n\n", .{});
     try output.print("USAGE:\n", .{});
-    try output.print("    zig run main.zig -- <a> <b> <c>i\n", .{});
+    try output.print("    zig run main.zig -- <a> <b> <c>\n", .{});
     try output.print("    *a,b and c must be numbers\n\n", .{});
     try output.print("FLAGSi:\n", .{});
     try output.print("    `help`   prints this message\n\n", .{});

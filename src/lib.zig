@@ -119,7 +119,11 @@ pub fn createSimplifiedFract(num: i64, den: i64) Fraction {
     };
 }
 
-pub const Fraction_error = error{ denZero, divisionByZero, multiplicationByZero };
+pub const Fraction_error = error{
+    denZero, //
+    divisionByZero, //
+    multiplicationByZero, //
+};
 
 pub const Fraction = struct {
     numerator: i64,
