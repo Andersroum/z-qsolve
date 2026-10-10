@@ -10,10 +10,10 @@ fn UnfStderrWriter(io: std.Io, text: []const u8) !void {
 fn printHelp(init: std.process.Init) !void {
     const io = init.io;
     var buffer: [4096]u8 = undefined;
-    var file_writer = std.Io.File.writer(stderr, io, &buffer);
+    var file_writer = std.Io.File.stdout().writer(io, &buffer);
     const output = &file_writer.interface;
 
-    try output.print("Zig Qsolver\n", .{});
+    try output.print("\nZig Qsolver\n", .{});
     try output.print("Solve equations in the form ax^2 + bx + c = 0\n\n", .{});
     try output.print("USAGE:\n", .{});
     try output.print("    zig run main.zig -- <a> <b> <c>\n", .{});
@@ -22,7 +22,7 @@ fn printHelp(init: std.process.Init) !void {
     try output.print("    `help`   prints this message\n\n", .{});
     try output.print("EXAMPLES:\n", .{});
     try output.print("    zig run main.zig -- 1 -5 6\n", .{});
-    try output.print("    zig run main.zig -- 43.2 3/4 78\n\n", .{});
+    try output.print("    zig run main.zig -- 43.2 3/4 78\n", .{});
 
     try output.flush();
 }
@@ -39,17 +39,17 @@ pub fn main(init: std.process.Init) !void {
         break :out_path arg;
     } else {
         try printHelp(init);
-        try UnfStderrWriter(init.io, "Error: No arguments were entered");
+        try UnfStderrWriter(init.io, "\nError: No arguments were entered\n");
         return;
     };
 
     const b: [:0]const u8 = args.next() orelse {
-        try UnfStderrWriter(init.io, "Error: Entered arguments were not enough. Run with `help` for usage infos");
+        try UnfStderrWriter(init.io, "\nError: Entered arguments were not enough. Run with `help` for usage infos\n");
         return;
     };
 
     const c: [:0]const u8 = args.next() orelse {
-        try UnfStderrWriter(init.io, "Error: Entered argumets were not enough. Run with `help` for usage infos");
+        try UnfStderrWriter(init.io, "\nError: Entered argumets were not enough. Run with `help` for usage infos\n");
         return;
     };
 

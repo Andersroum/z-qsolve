@@ -123,6 +123,7 @@ pub const Fraction_error = error{
     denZero, //
     divisionByZero, //
     multiplicationByZero, //
+    inputInfiniteOrNan,
 };
 
 pub const Fraction = struct {
@@ -194,6 +195,47 @@ pub const Fraction = struct {
         });
     }
 
+    pub fn from(num: f64) Fraction_error!Self {
+        if (!std.math.isFinite(num)) {
+            return Fraction_error.inputInfiniteOrNan;
+        }
+        var x: f64 = num;
+        const a: i64 = @floor(x);
+
+        var c0: struct { i64, i64 } = .{ a, 1 };
+
+        if (x - @floor(x) < 1e-10) {
+            return Fraction.New(c0[0], c0[1]);
+        }
+
+        x = 1.0 / (x - @floor(x));
+        const a1: i64 = @floor(x);
+
+        var c1: struct { i64, i64 } = .{ a * a1 + 1, a1 };
+
+        var iterations: u8 = 0;
+
+        while (true) {
+            const remainder = x - @floor(x);
+
+            if (remainder < 1e-10 or iterations > 15) {
+                break;
+            }
+
+            x = 1.0 / remainder;
+            const temp_a: i64 = @floor(x);
+
+            const new_num = c1[0] * temp_a + c0[0];
+            const new_den = c1[1] * temp_a + c0[1];
+
+            c0 = c1;
+            c1 = .{ new_num, new_den };
+
+            iterations += 1;
+        }
+        return Fraction.New(c1[0], c1[1]);
+    }
+
     pub fn format(
         self: Fraction,
         writer: *std.Io.Writer,
@@ -205,3 +247,39 @@ pub const Fraction = struct {
         }
     }
 };
+
+test "Fraction conversion from f64" {
+    const testing = std.testing;
+
+    {
+        const fract: Fraction = try Fraction.from(4);
+        try testing.expectEqual(@as(i128, 4), fract.numerator);
+        try testing.expectEqual(@as(i128, 1), fract.denominator);
+    }
+
+    {
+        const fract: Fraction = try Fraction.from(0.5);
+        try testing.expectEqual(@as(i128, 1), fract.numerator);
+        try testing.expectEqual(@as(i128, 2), fract.denominator);
+    }
+
+    {
+        const fract: Fraction = try Fraction.from(-3.25);
+        try testing.expectEqual(@as(i128, -13), fract.numerator);
+        try testing.expectEqual(@as(i128, 4), fract.denominator);
+    }
+
+    {
+        const fract: Fraction = try Fraction.from(0.375);
+        try testing.expectEqual(@as(i128, 3), fract.numerator);
+        try testing.expectEqual(@as(i128, 8), fract.denominator);
+    }
+
+    {
+        try testing.expectError(Fraction_error.inputInfiniteOrNan, Fraction.from(std.math.inf(f64)));
+    }
+
+    {
+        try testing.expectError(Fraction_error.inputInfiniteOrNan, Fraction.from(std.math.nan(f64)));
+    }
+}
