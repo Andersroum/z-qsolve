@@ -70,7 +70,7 @@ pub const SquareRoot = struct {
                 .numerator = outside_num,
                 .denominator = outside_den,
             },
-            //
+
             .inside = Fraction{
                 .numerator = inside_num,
                 .denominator = inside_den,
@@ -120,9 +120,9 @@ pub fn createSimplifiedFract(num: i64, den: i64) Fraction {
 }
 
 pub const Fraction_error = error{
-    denZero, //
-    divisionByZero, //
-    multiplicationByZero, //
+    denZero,
+    divisionByZero,
+    multiplicationByZero,
     inputInfiniteOrNan,
 };
 

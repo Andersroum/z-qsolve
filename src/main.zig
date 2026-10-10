@@ -1,7 +1,22 @@
 const std = @import("std");
 const lib = @import("lib.zig");
+const SquareRoot = lib.SquareRoot;
 const Fraction = lib.Fraction;
+const FractionError = lib.Fraction_error;
 const stderr = std.Io.File.stderr();
+
+const QuadraticResult = union(enum) {
+    OneReal: Fraction,
+    TwoReal: struct {
+        first_part: Fraction,
+        sqrt_part: SquareRoot,
+    },
+    Complex: struct {
+        first_part: Fraction,
+        second_part: Fraction,
+        inside_sqrt: Fraction,
+    },
+};
 
 fn UnfStderrWriter(io: std.Io, text: []const u8) !void {
     try stderr.writeStreamingAll(io, text);
@@ -25,6 +40,48 @@ fn printHelp(init: std.process.Init) !void {
     try output.print("    zig run main.zig -- 43.2 3/4 78\n", .{});
 
     try output.flush();
+}
+
+fn maybeNumber(x: [:0]const u8) !Fraction {
+    const number: i64 = try std.fmt.parseInt(i64, x, 10);
+
+    return .{
+        .numerator = number,
+        .denominator = 1,
+    };
+}
+
+fn splitOnce(text: [:0]const u8, delimiter: u8) ?struct { before: []const u8, after: []const u8 } {
+    const index = std.mem.findScalar(u8, text, delimiter) orelse return null;
+
+    return .{
+        text[0..index],
+        text[delimiter + 1 ..],
+    };
+}
+
+fn trasform(x: [:0]const u8) anyerror!Fraction {
+    if (splitOnce(x, '/')) |splitted| {
+        const num: i64 = try std.fmt.parseInt(i64, splitted.before, 10);
+        const den: i64 = try std.fmt.parseInt(i64, splitted.after, 10);
+
+        if (den == 0) {
+            return FractionError.denZero;
+        }
+
+        return .{
+            .numerator = num,
+            .denominator = den,
+        };
+    } else if (splitOnce(x, '.')) |splitted| {
+        if (splitted.after.len > 12) {
+            // todo
+        } else {
+            // todo
+        }
+    } else {
+        maybeNumber(x);
+    }
 }
 
 pub fn main(init: std.process.Init) !void {
