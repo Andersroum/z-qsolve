@@ -42,7 +42,7 @@ fn printHelp(init: std.process.Init) !void {
     try output.flush();
 }
 
-fn maybeNumber(x: [:0]const u8) !Fraction {
+fn maybeNumber(x: []const u8) !Fraction {
     const number: i64 = try std.fmt.parseInt(i64, x, 10);
 
     return .{
@@ -51,17 +51,34 @@ fn maybeNumber(x: [:0]const u8) !Fraction {
     };
 }
 
-fn splitOnce(text: [:0]const u8, delimiter: u8) ?struct { before: []const u8, after: []const u8 } {
-    const index = std.mem.findScalar(u8, text, delimiter) orelse return null;
+fn exactDecimal(before: []const u8, after: []const u8) !Fraction {
+    const len: i64 = @intCast(after.len);
+    const den: i64 = std.math.pow(i64, 10, len);
+
+    const smp_all = std.heap.smp_allocator;
+    const num_str = try std.mem.concat(smp_all, u8, &[_][]const u8{ before, after });
+
+    const num: i64 = try std.fmt.parseInt(i64, num_str, 10);
+
+    return Fraction.New(num, den);
+}
+
+fn containsDot(x: []const u8) !Fraction {
+    const parsed_inp: f64 = try std.fmt.parseFloat(f64, x);
+    return Fraction.from(parsed_inp);
+}
+
+fn splitOnce(text: *const []const u8, delimiter: u8) ?struct { before: []const u8, after: []const u8 } {
+    const index = std.mem.findScalar(u8, text.*, delimiter) orelse return null;
 
     return .{
-        text[0..index],
-        text[delimiter + 1 ..],
+        .before = text.*[0..index],
+        .after = text.*[index + 1 ..],
     };
 }
 
 fn trasform(x: [:0]const u8) anyerror!Fraction {
-    if (splitOnce(x, '/')) |splitted| {
+    if (splitOnce(&x, '/')) |splitted| {
         const num: i64 = try std.fmt.parseInt(i64, splitted.before, 10);
         const den: i64 = try std.fmt.parseInt(i64, splitted.after, 10);
 
@@ -69,18 +86,15 @@ fn trasform(x: [:0]const u8) anyerror!Fraction {
             return FractionError.denZero;
         }
 
-        return .{
-            .numerator = num,
-            .denominator = den,
-        };
-    } else if (splitOnce(x, '.')) |splitted| {
-        if (splitted.after.len > 12) {
-            // todo
+        return Fraction.New(num, den);
+    } else if (splitOnce(&x, '.')) |splitted| {
+        if (splitted.after.len > 5) {
+            return try containsDot(x);
         } else {
-            // todo
+            return try exactDecimal(splitted.before, splitted.after);
         }
     } else {
-        maybeNumber(x);
+        return try maybeNumber(x);
     }
 }
 
@@ -110,5 +124,5 @@ pub fn main(init: std.process.Init) !void {
         return;
     };
 
-    std.debug.print("{s}{s}{s}\n", .{ a, b, c });
+    std.debug.print("{f}\n{f}\n{f}\n", .{ try trasform(a), try trasform(b), try trasform(c) });
 }
