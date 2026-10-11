@@ -3,6 +3,7 @@ const lib = @import("lib.zig");
 const SquareRoot = lib.SquareRoot;
 const Fraction = lib.Fraction;
 const FractionError = lib.Fraction_error;
+
 const stderr = std.Io.File.stderr();
 
 const QuadraticResult = union(enum) {
@@ -42,6 +43,18 @@ fn printHelp(init: std.process.Init) !void {
     try output.flush();
 }
 
+fn unexpectedErrorPrint(init: std.process.Init, err: anyerror) !void {
+    const io = init.io;
+
+    var buffer: [512]u8 = undefined;
+    var stderr_writer = stderr.writer(io, &buffer);
+    const err_output = &stderr_writer.interface;
+
+    try UnfStderrWriter(io, "Unexpected error encountered:\n");
+    try err_output.print("    {}", .{err});
+    try err_output.flush();
+}
+
 fn maybeNumber(x: []const u8) !Fraction {
     const number: i64 = try std.fmt.parseInt(i64, x, 10);
 
@@ -68,17 +81,17 @@ fn containsDot(x: []const u8) !Fraction {
     return Fraction.from(parsed_inp);
 }
 
-fn splitOnce(text: *const []const u8, delimiter: u8) ?struct { before: []const u8, after: []const u8 } {
-    const index = std.mem.findScalar(u8, text.*, delimiter) orelse return null;
+fn splitOnce(text: []const u8, delimiter: u8) ?struct { before: []const u8, after: []const u8 } {
+    const index = std.mem.findScalar(u8, text, delimiter) orelse return null;
 
     return .{
-        .before = text.*[0..index],
-        .after = text.*[index + 1 ..],
+        .before = text[0..index],
+        .after = text[index + 1 ..],
     };
 }
 
 fn trasform(x: [:0]const u8) anyerror!Fraction {
-    if (splitOnce(&x, '/')) |splitted| {
+    if (splitOnce(x, '/')) |splitted| {
         const num: i64 = try std.fmt.parseInt(i64, splitted.before, 10);
         const den: i64 = try std.fmt.parseInt(i64, splitted.after, 10);
 
@@ -87,7 +100,7 @@ fn trasform(x: [:0]const u8) anyerror!Fraction {
         }
 
         return Fraction.New(num, den);
-    } else if (splitOnce(&x, '.')) |splitted| {
+    } else if (splitOnce(x, '.')) |splitted| {
         if (splitted.after.len > 5) {
             return try containsDot(x);
         } else {
@@ -124,5 +137,63 @@ pub fn main(init: std.process.Init) !void {
         return;
     };
 
-    std.debug.print("{f}\n{f}\n{f}\n", .{ try trasform(a), try trasform(b), try trasform(c) });
+    const a_fract: Fraction = trasform(a) catch |err| switch (err) {
+        FractionError.denZero => {
+            try UnfStderrWriter(init.io, "Error: The denominator cannot be zero");
+            return;
+        },
+        FractionError.inputInfiniteOrNan => {
+            try UnfStderrWriter(init.io, "Error: The input cannot be infinite/NaN");
+            return;
+        },
+        else => {
+            try unexpectedErrorPrint(init, err);
+            return;
+        },
+    };
+
+    if (a_fract.numerator == 0) {
+        try UnfStderrWriter(init.io, "Error: 'a' cannot be zero");
+        return;
+    }
+
+    const b_fract: Fraction = trasform(b) catch |err| switch (err) {
+        FractionError.denZero => {
+            try UnfStderrWriter(init.io, "Error: The denominator cannot be zero");
+            return;
+        },
+        FractionError.inputInfiniteOrNan => {
+            try UnfStderrWriter(init.io, "Error: The input cannot be infinite/NaN");
+            return;
+        },
+        else => {
+            try unexpectedErrorPrint(init, err);
+            return;
+        },
+    };
+
+    const c_fract: Fraction = trasform(c) catch |err| switch (err) {
+        FractionError.denZero => {
+            try UnfStderrWriter(init.io, "Error: The denominator cannot be zero");
+            return;
+        },
+        FractionError.inputInfiniteOrNan => {
+            try UnfStderrWriter(init.io, "Error: The input cannot be infinite/NaN");
+            return;
+        },
+        else => {
+            try unexpectedErrorPrint(init, err);
+            return;
+        },
+    };
+
+    //
+    //
+    // todo:
+    //
+    // add the error.invalidCharacter in the switch
+    //
+    //
+
+    std.debug.print("{f}\n{f}\n{f}\n", .{ a_fract, b_fract, c_fract });
 }
