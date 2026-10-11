@@ -55,10 +55,10 @@ fn exactDecimal(before: []const u8, after: []const u8) !Fraction {
     const len: i64 = @intCast(after.len);
     const den: i64 = std.math.pow(i64, 10, len);
 
-    const smp_all = std.heap.smp_allocator;
-    const num_str = try std.mem.concat(smp_all, u8, &[_][]const u8{ before, after });
+    const before_int: i64 = try std.fmt.parseInt(i64, before, 10);
+    const after_int: i64 = try std.fmt.parseInt(i64, after, 10);
 
-    const num: i64 = try std.fmt.parseInt(i64, num_str, 10);
+    const num: i64 = if (before_int < 0) before_int * den - after_int else before_int * den + after_int;
 
     return Fraction.New(num, den);
 }
