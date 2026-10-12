@@ -50,8 +50,8 @@ fn unexpectedErrorPrint(init: std.process.Init, err: anyerror) !void {
     var stderr_writer = stderr.writer(io, &buffer);
     const err_output = &stderr_writer.interface;
 
-    try UnfStderrWriter(io, "Unexpected error encountered:\n");
-    try err_output.print("    {}", .{err});
+    try UnfStderrWriter(io, "\nUnexpected error encountered:\n");
+    try err_output.print("    {}\n", .{err});
     try err_output.flush();
 }
 
@@ -139,11 +139,15 @@ pub fn main(init: std.process.Init) !void {
 
     const a_fract: Fraction = trasform(a) catch |err| switch (err) {
         FractionError.denZero => {
-            try UnfStderrWriter(init.io, "Error: The denominator cannot be zero");
+            try UnfStderrWriter(init.io, "\nError: The denominator cannot be zero\n");
             return;
         },
         FractionError.inputInfiniteOrNan => {
-            try UnfStderrWriter(init.io, "Error: The input cannot be infinite/NaN");
+            try UnfStderrWriter(init.io, "\nError: The input cannot be infinite/NaN\n");
+            return;
+        },
+        error.InvalidCharacter => {
+            try UnfStderrWriter(init.io, "\nError: The input('a') couldn't be parsed: Invalid input\n");
             return;
         },
         else => {
@@ -153,17 +157,21 @@ pub fn main(init: std.process.Init) !void {
     };
 
     if (a_fract.numerator == 0) {
-        try UnfStderrWriter(init.io, "Error: 'a' cannot be zero");
+        try UnfStderrWriter(init.io, "\nError: 'a' cannot be zero\n");
         return;
     }
 
     const b_fract: Fraction = trasform(b) catch |err| switch (err) {
         FractionError.denZero => {
-            try UnfStderrWriter(init.io, "Error: The denominator cannot be zero");
+            try UnfStderrWriter(init.io, "\nError: The denominator cannot be zero\n");
             return;
         },
         FractionError.inputInfiniteOrNan => {
-            try UnfStderrWriter(init.io, "Error: The input cannot be infinite/NaN");
+            try UnfStderrWriter(init.io, "\nError: The input cannot be infinite/NaN\n");
+            return;
+        },
+        error.InvalidCharacter => {
+            try UnfStderrWriter(init.io, "\nError: The input('b') couldn't be parsed: Invalid input\n");
             return;
         },
         else => {
@@ -174,11 +182,15 @@ pub fn main(init: std.process.Init) !void {
 
     const c_fract: Fraction = trasform(c) catch |err| switch (err) {
         FractionError.denZero => {
-            try UnfStderrWriter(init.io, "Error: The denominator cannot be zero");
+            try UnfStderrWriter(init.io, "\nError: The denominator cannot be zero\n");
             return;
         },
         FractionError.inputInfiniteOrNan => {
-            try UnfStderrWriter(init.io, "Error: The input cannot be infinite/NaN");
+            try UnfStderrWriter(init.io, "\nError: The input cannot be infinite/NaN\n");
+            return;
+        },
+        error.InvalidCharacter => {
+            try UnfStderrWriter(init.io, "\nError: The input('c') couldn't be parsed: Invalid input\n");
             return;
         },
         else => {
@@ -186,14 +198,6 @@ pub fn main(init: std.process.Init) !void {
             return;
         },
     };
-
-    //
-    //
-    // todo:
-    //
-    // add the error.invalidCharacter in the switch
-    //
-    //
 
     std.debug.print("{f}\n{f}\n{f}\n", .{ a_fract, b_fract, c_fract });
 }
