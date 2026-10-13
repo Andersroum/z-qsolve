@@ -79,7 +79,7 @@ pub const SquareRoot = struct {
     }
 
     pub fn format(
-        self: @This(),
+        self: Self,
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
         if (self.inside.numerator == self.inside.denominator) {
