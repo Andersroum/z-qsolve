@@ -14,8 +14,7 @@ const QuadraticResult = union(enum) {
     },
     Complex: struct {
         first_part: Fraction,
-        second_part: Fraction,
-        inside_sqrt: Fraction,
+        sqrt_part: SquareRoot,
     },
 };
 
@@ -108,6 +107,66 @@ fn trasform(x: [:0]const u8) anyerror!Fraction {
         }
     } else {
         return try maybeNumber(x);
+    }
+}
+
+fn constructResult(a: Fraction, b: Fraction, c: Fraction) !QuadraticResult {
+    const neg_four: Fraction = Fraction{ .numerator = -4, .denominator = 1 };
+    const two: Fraction = Fraction{
+        .numerator = 2,
+        .denominator = 1,
+    };
+    const neg_one: Fraction = Fraction{
+        .numerator = -1,
+        .denominator = 1,
+    };
+
+    const det: Fraction = det: {
+        const b_sq: Fraction = try b.mul(b);
+        const four_a_c: Fraction = try (try neg_four.mul(a)).mul(c);
+
+        break :det try b_sq.add(four_a_c);
+    };
+    const den: Fraction = try two.mul(a);
+    const first_part: Fraction = first_part: {
+        const one_b: Fraction = try neg_one.mul(b);
+
+        break :first_part try one_b.div(den);
+    };
+
+    const square_root: SquareRoot = try SquareRoot.findSquareRoot(det);
+    const outside: Fraction = square_root.outside;
+    const inside: Fraction = square_root.inside;
+
+    const second_part: Fraction = try outside.div(den);
+
+    if (det.numerator == 0) {
+        return .{
+            .OneReal = first_part,
+        };
+    } else if (det.numerator < 0) {
+        return .{
+            .Complex = .{
+                .first_part = first_part,
+                .sqrt_part = .{
+                    .outside = second_part,
+                    .inside = Fraction{
+                        .numerator = inside.numerator,
+                        .denominator = inside.denominator,
+                    },
+                },
+            },
+        };
+    } else {
+        return .{
+            .TwoReal = .{
+                .first_part = first_part,
+                .sqrt_part = .{
+                    .outside = second_part,
+                    .inside = inside,
+                },
+            },
+        };
     }
 }
 
@@ -205,4 +264,9 @@ pub fn main(init: std.process.Init) !void {
     };
 
     std.debug.print("{f}\n{f}\n{f}\n", .{ a, b, c });
+
+    const result = try constructResult(a, b, c);
+    std.debug.print("first_part: {any}\n", .{result.Complex.first_part});
+    std.debug.print("outside: {any}\n", .{result.Complex.sqrt_part.outside});
+    std.debug.print("inside: {any}\n", .{result.Complex.sqrt_part.inside});
 }

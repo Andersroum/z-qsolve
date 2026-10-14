@@ -54,27 +54,20 @@ pub const SquareRoot = struct {
 
     const Self = @This();
 
-    pub fn findSquareRoot(x: Fraction) Self {
+    pub fn findSquareRoot(x: Fraction) !Self {
         const fract: Fraction = createSimplifiedFract(x.numerator, x.denominator);
 
-        const numerator_square_root: i64 = findSquare(fract.numerator);
+        const numerator_square_root: struct { i64, i64 } = findSquare(fract.numerator);
         const outside_num: i64 = numerator_square_root[0];
         const inside_num: i64 = numerator_square_root[1];
 
-        const denominator_square_root: i64 = findSquare(fract.denominator);
+        const denominator_square_root: struct { i64, i64 } = findSquare(fract.denominator);
         const outside_den: i64 = denominator_square_root[0];
         const inside_den: i64 = denominator_square_root[1];
 
         return .{
-            .outside = Fraction{
-                .numerator = outside_num,
-                .denominator = outside_den,
-            },
-
-            .inside = Fraction{
-                .numerator = inside_num,
-                .denominator = inside_den,
-            },
+            .outside = try Fraction.New(outside_num, outside_den),
+            .inside = try Fraction.New(inside_num, inside_den),
         };
     }
 
