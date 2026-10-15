@@ -5,6 +5,23 @@ const Fraction = lib.Fraction;
 const FractionError = lib.Fraction_error;
 
 const stderr = std.Io.File.stderr();
+pub const panic = std.debug.FullPanic(customPanic);
+
+fn customPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
+    _ = first_trace_addr;
+    var buf: [512]u8 = undefined;
+
+    const formatted = std.fmt.bufPrint(
+        &buf,
+        "\n[Critical: Panic] ==========\nReason:{s}\n============================\n",
+        .{msg},
+    ) catch "\nA panic occured. The message was too long\n";
+
+    const err_out = std.posix.STDERR_FILENO;
+    _ = std.posix.system.write(err_out, formatted.ptr, formatted.len);
+
+    std.process.exit(1);
+}
 
 const QuadraticResult = union(enum) {
     OneReal: Fraction,
@@ -16,6 +33,32 @@ const QuadraticResult = union(enum) {
         first_part: Fraction,
         sqrt_part: SquareRoot,
     },
+
+    pub fn format(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        switch (self) {
+            .OneReal => {
+                try writer.print("{f}", .{self.OneReal});
+            },
+            .TwoReal => {
+                try writer.print("{f} ± {f}", .{ self.TwoReal.first_part, self.TwoReal.sqrt_part });
+            },
+            .Complex => {
+                if (self.Complex.sqrt_part.inside.numerator == self.Complex.sqrt_part.inside.denominator) {
+                    if (self.Complex.sqrt_part.outside.denominator == 1) {
+                        try writer.print("{f} ± {f}i", .{ self.Complex.first_part, self.Complex.sqrt_part });
+                    } else {
+                        try writer.print("{f} ± ({f})i", .{ self.Complex.first_part, self.Complex.sqrt_part });
+                    }
+                } else {
+                    if (self.Complex.sqrt_part.outside.denominator == 1) {
+                        try writer.print("{f} ± {f}i√{f}", .{ self.Complex.first_part, self.Complex.sqrt_part.outside, self.Complex.sqrt_part.inside });
+                    } else {
+                        try writer.print("{f} ± ({f})i√{f}", .{ self.Complex.first_part, self.Complex.sqrt_part.outside, self.Complex.sqrt_part.inside });
+                    }
+                }
+            },
+        }
+    }
 };
 
 fn UnfStderrWriter(io: std.Io, text: []const u8) !void {
@@ -100,7 +143,7 @@ fn trasform(x: [:0]const u8) anyerror!Fraction {
 
         return Fraction.New(num, den);
     } else if (splitOnce(x, '.')) |splitted| {
-        if (splitted.after.len > 5) {
+        if (splitted.after.len > 8) {
             return try containsDot(x);
         } else {
             return try exactDecimal(splitted.before, splitted.after);
@@ -150,10 +193,7 @@ fn constructResult(a: Fraction, b: Fraction, c: Fraction) !QuadraticResult {
                 .first_part = first_part,
                 .sqrt_part = .{
                     .outside = second_part,
-                    .inside = Fraction{
-                        .numerator = inside.numerator,
-                        .denominator = inside.denominator,
-                    },
+                    .inside = inside,
                 },
             },
         };
@@ -263,10 +303,30 @@ pub fn main(init: std.process.Init) !void {
         return;
     };
 
-    std.debug.print("{f}\n{f}\n{f}\n", .{ a, b, c });
+    const result: QuadraticResult = constructResult(a, b, c) catch |err| {
+        try unexpectedErrorPrint(init, err);
+        return;
+    };
 
-    const result = try constructResult(a, b, c);
-    std.debug.print("first_part: {any}\n", .{result.Complex.first_part});
-    std.debug.print("outside: {any}\n", .{result.Complex.sqrt_part.outside});
-    std.debug.print("inside: {any}\n", .{result.Complex.sqrt_part.inside});
+    var buffer: [512]u8 = undefined;
+    var file_writer = std.Io.File.stdout().writer(init.io, &buffer);
+    const output = &file_writer.interface;
+
+    switch (result) {
+        .OneReal => {
+            try output.print("This quadratic has a real solution:\n", .{});
+            try output.print("     {f}", .{result});
+            try output.flush();
+        },
+        .TwoReal => {
+            try output.print("This quadratic has two real solutions:\n", .{});
+            try output.print("     {f}", .{result});
+            try output.flush();
+        },
+        .Complex => {
+            try output.print("This quadratic has two complex solutions:\n", .{});
+            try output.print("     {f}", .{result});
+            try output.flush();
+        },
+    }
 }

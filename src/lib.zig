@@ -30,19 +30,18 @@ pub fn findSquare(num: i64) struct { i64, i64 } {
 
     var iterations: u16 = 0;
     var i: i64 = 3;
-    while (i < @divTrunc(inside, i)) {
+    while (i <= @divTrunc(inside, i)) {
         const i_sqr: i64 = i * i;
         while (@rem(inside, i_sqr) == 0) {
             inside = @divExact(inside, i_sqr);
             outside *= i;
         }
         iterations += 1;
+        i += 2;
 
         if (iterations > 2500) {
             break;
         }
-
-        i += 2;
     }
 
     return .{ outside, inside };
@@ -71,10 +70,7 @@ pub const SquareRoot = struct {
         };
     }
 
-    pub fn format(
-        self: Self,
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
+    pub fn format(self: Self, writer: *std.Io.Writer) std.Io.Writer.Error!void {
         if (self.inside.numerator == self.inside.denominator) {
             if (self.outside.denominator == 1) {
                 try writer.print("{d}", .{self.outside.numerator});
@@ -229,10 +225,7 @@ pub const Fraction = struct {
         return Fraction.New(c1[0], c1[1]);
     }
 
-    pub fn format(
-        self: Fraction,
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
+    pub fn format(self: Fraction, writer: *std.Io.Writer) std.Io.Writer.Error!void {
         if (self.denominator == 1) {
             try writer.print("{d}", .{self.numerator});
         } else {
